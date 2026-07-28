@@ -1,0 +1,13 @@
+# Dependencies
+node_modules/
+
+# Local database file
+f1data.db
+
+# Environment variables & secrets (if you create a .env file later)
+.env
+.env.local
+
+# OS files
+.DS_Store
+Thumbs.db
