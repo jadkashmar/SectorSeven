@@ -1,0 +1,152 @@
+/* Redesign v2 — "Timing Tower"
+   ---------------------------------------------------------------
+   Direction: modeled on broadcast F1 timing-tower graphics rather
+   than a generic SaaS/glass template. Flat black canvas, condensed
+   display type for impact, monospace for every data value, solid
+   color-blocked chips instead of glowing pill badges, thin solid
+   rules instead of blur/glow effects, sharp corners.
+
+   Explicitly avoided (the brief called this out as "AI slop"):
+   backdrop-blur glass cards, radial spotlight/mouse-glow effects,
+   text-shadow glow, gradient blobs, pill-shaped nav/buttons,
+   hover-scale on every element.
+
+   Scoped entirely under .redesign-root — never leaks into the
+   classic site, which doesn't import this file. */
+
+@import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+.redesign-root {
+  --rd-font-display: 'Barlow Condensed', 'Inter Variable', sans-serif;
+  --rd-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  --rd-bg: #08090a;
+  --rd-surface: #0f1012;
+  --rd-surface-raised: #16171a;
+  --rd-line: rgba(255, 255, 255, 0.09);
+  --rd-line-strong: rgba(255, 255, 255, 0.16);
+  --rd-text: #f2f2f0;
+  --rd-text-dim: #8b8d92;
+  --rd-text-faint: #55575d;
+
+  background: var(--rd-bg);
+  color: var(--rd-text);
+  font-family: var(--rd-font-display);
+}
+
+.redesign-root .rd-mono {
+  font-family: var(--rd-font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0;
+}
+
+.redesign-root .rd-label {
+  font-family: var(--rd-font-mono);
+  font-size: 0.6875rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--rd-text-dim);
+}
+
+.redesign-root .rd-display {
+  font-family: var(--rd-font-display);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  line-height: 0.92;
+}
+
+/* Solid status chip — flat color block, no glow/blur, sharp edges */
+.redesign-root .rd-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.15rem 0.5rem;
+  font-family: var(--rd-font-mono);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  border-radius: 2px;
+}
+
+.redesign-root .rd-chip-live { background: var(--color-primary); color: #fff; }
+.redesign-root .rd-chip-upcoming { background: #2a2100; color: #eab308; }
+.redesign-root .rd-chip-done { background: transparent; color: var(--rd-text-dim); border: 1px solid var(--rd-line-strong); }
+
+/* Accent rule — a thin flat line, the only "decoration" this system
+   uses instead of glow/gradient/blur. */
+.redesign-root .rd-rule {
+  height: 2px;
+  background: var(--color-primary);
+}
+
+.redesign-root .rd-row-hover {
+  transition: background-color 150ms ease;
+}
+.redesign-root .rd-row-hover:hover {
+  background-color: rgba(255, 255, 255, 0.035);
+}
+
+.redesign-root .rd-link {
+  position: relative;
+  text-decoration: none;
+}
+.redesign-root .rd-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -2px;
+  width: 100%;
+  height: 1px;
+  background: currentColor;
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 200ms ease;
+}
+.redesign-root .rd-link:hover::after,
+.redesign-root .rd-link[data-active='true']::after {
+  transform: scaleX(1);
+}
+
+/* Ticking data strip in the hero — a straightforward marquee, paused
+   under reduced motion (see prefers-reduced-motion block below). */
+@keyframes rd-ticker {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.redesign-root .rd-ticker-track {
+  animation: rd-ticker 28s linear infinite;
+  width: max-content;
+}
+.redesign-root .rd-ticker-wrap:hover .rd-ticker-track {
+  animation-play-state: paused;
+}
+
+/* Loading skeletons — a flat block with a single soft light sweep, not a
+   shiny gradient card. Falls back to a static block under reduced motion. */
+.redesign-root .rd-skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--rd-surface-raised);
+}
+.redesign-root .rd-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.06), transparent);
+  animation: rd-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes rd-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .redesign-root .rd-ticker-track {
+    animation: none;
+  }
+  .redesign-root .rd-skeleton::after {
+    display: none;
+  }
+}

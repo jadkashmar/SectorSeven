@@ -11,3 +11,6 @@ f1data.db
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local editor/agent tooling (not part of the project)
+.claude/
