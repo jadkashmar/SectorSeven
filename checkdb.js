@@ -1,7 +1,4 @@
-// checkDb.js
+// checkDb.js (or reuse your existing one)
 import Database from 'better-sqlite3';
 const db = new Database('f1data.db');
-
-console.log('Sessions:', db.prepare('SELECT * FROM sessions').all());
-console.log('Drivers:', db.prepare('SELECT * FROM drivers').all());
-console.log('Results:', db.prepare('SELECT * FROM results').all());
+console.log(db.prepare('SELECT COUNT(*) as count FROM results WHERE session_key = 11342').get());

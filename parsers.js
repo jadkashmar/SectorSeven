@@ -92,3 +92,18 @@ export function parseTimingAppData(timingAppDataObject) {
 }
 
 
+export function parsePosition(positionData) {
+  // Expected shape (unverified until live data confirms it):
+  // { Position: [ { Timestamp, Entries: { "1": { X, Y, Z, Status }, ... } } ] }
+  const latest = positionData?.Position?.[positionData.Position.length - 1];
+  if (!latest?.Entries) return [];
+
+  return Object.entries(latest.Entries).map(([number, entry]) => ({
+    number: parseInt(number),
+    x: entry.X,
+    y: entry.Y,
+    z: entry.Z,
+    status: entry.Status
+  }));
+}
+

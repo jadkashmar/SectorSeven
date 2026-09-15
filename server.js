@@ -1,6 +1,8 @@
 import express from 'express';
 import { connectToF1Feed } from './f1client.js';
 import { saveSessionInfo, saveDrivers, saveResults, db } from './db.js'; 
+import { getCachedOpenF1, setCachedOpenF1 } from './db.js';
+
 import cors from 'cors';
 
 const app = express();
@@ -67,7 +69,58 @@ connectToF1Feed({
     broadcast('timingData', timing);
     if (currentSessionKey) saveResults(currentSessionKey, timing);
   },
+
+
+  onPosition: (positions) => broadcast('position', positions),
+
+
   onTimingAppData: (data) => broadcast('timingAppData', data)
 });
+
+
+
+const openf1Cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function fetchOpenF1Cached(path) {
+  const cached = openf1Cache.get(path);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+
+  try {
+    const response = await fetch(`https://api.openf1.org/v1${path}`);
+    const data = await response.json();
+
+    if (!Array.isArray(data)) {
+      // OpenF1 is restricted/erroring — fall back to last known good data
+      const fallback = getCachedOpenF1(path);
+      if (fallback) return fallback;
+      return data; // no fallback available, return the error as-is
+    }
+
+    openf1Cache.set(path, { data, timestamp: Date.now() });
+    setCachedOpenF1(path, data); // persist for future fallback
+    return data;
+  } catch (err) {
+    const fallback = getCachedOpenF1(path);
+    if (fallback) return fallback;
+    throw err;
+  }
+}
+
+app.get('/api/openf1/sessions', async (req, res) => {
+  const year = req.query.year || '2026';
+  const data = await fetchOpenF1Cached(`/sessions?year=${year}`);
+  res.json(data);
+});
+
+app.get('/api/openf1/sessions/:meetingKey', async (req, res) => {
+  const data = await fetchOpenF1Cached(`/sessions?meeting_key=${req.params.meetingKey}`);
+  res.json(data);
+});
+
+
+
 
 app.listen(3000, () => console.log('Server running on http://localhost:3000'));
