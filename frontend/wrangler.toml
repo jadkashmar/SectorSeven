@@ -1,0 +1,10 @@
+# Cloudflare Pages config. With this committed, a Pages project connected
+# to this repo (root directory set to "frontend") picks up the build output
+# directory automatically — no need to re-enter it in the dashboard.
+name = "sectorseven"
+pages_build_output_dir = "dist"
+
+# VITE_API_URL is set as a Pages environment variable in the dashboard
+# instead of here, since it points at wherever the backend ends up hosted
+# (Railway/Render/Fly.io) and isn't a secret, but also isn't fixed at
+# authoring time.

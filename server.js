@@ -13,6 +13,8 @@ const clients = [];
 const lastKnown = {};
 let currentSessionKey = null;
 
+app.get('/health', (req, res) => res.send('ok'));
+
 app.get('/api/live', (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
@@ -123,4 +125,5 @@ app.get('/api/openf1/sessions/:meetingKey', async (req, res) => {
 
 
 
-app.listen(3000, () => console.log('Server running on http://localhost:3000'));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

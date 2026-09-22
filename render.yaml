@@ -1,0 +1,17 @@
+# Render "Blueprint" — deploy with New > Blueprint, pointing at this repo.
+# Builds from the root Dockerfile and mounts a persistent disk at /data so
+# f1data.db survives redeploys (see docker-entrypoint.sh).
+services:
+  - type: web
+    name: sectorseven-api
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+    disk:
+      name: sectorseven-data
+      mountPath: /data
+      sizeGB: 1
