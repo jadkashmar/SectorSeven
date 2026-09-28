@@ -1,6 +1,14 @@
 # Render "Blueprint" — deploy with New > Blueprint, pointing at this repo.
-# Builds from the root Dockerfile and mounts a persistent disk at /data so
-# f1data.db survives redeploys (see docker-entrypoint.sh).
+# Builds from the root Dockerfile.
+#
+# No persistent disk here — Render's free tier doesn't support them. That's
+# fine: the live-timing feature is entirely in-memory (WebSocket feed -> SSE
+# broadcast), it doesn't touch the database. Only /api/sessions and past
+# session results/standings depend on f1data.db, and those just reset
+# whenever the free instance restarts (docker-entrypoint.sh's /data symlink
+# trick simply never activates without a mounted volume, so this is a no-op
+# change on hosts that DO have a disk — e.g. Render Starter+, Railway,
+# Fly.io — if you upgrade later).
 services:
   - type: web
     name: sectorseven-api
@@ -11,7 +19,3 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-    disk:
-      name: sectorseven-data
-      mountPath: /data
-      sizeGB: 1

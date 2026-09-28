@@ -1,67 +1,60 @@
 # Deploying Sector Seven
 
-Two separate deploys, because Cloudflare Pages only serves static files and
+Two separate deploys, because a static host only serves files and
 `server.js` needs a long-lived process (WebSocket connection to F1's live
 feed, an in-memory list of SSE clients, SQLite on disk):
 
-1. **Frontend** (`frontend/`) → Cloudflare Pages
-2. **Backend** (`server.js` + friends) → Railway, Render, Fly.io, or any
-   host that runs a Dockerfile
+1. **Frontend** (`frontend/`) → Vercel
+2. **Backend** (`server.js` + friends) → Render (or Railway/Fly.io/any host
+   that runs a Dockerfile)
 
 ## 1. Backend
 
-Config for both Render and Railway is already committed, built from the
-root `Dockerfile`:
-
-### Render
+### Render (current setup — free tier)
 
 New → Blueprint → point at this repo → it reads `render.yaml`.
 
-- Builds from `Dockerfile`.
-- Health check at `/health`.
-- Mounts a persistent disk at `/data` so `f1data.db` survives redeploys
-  (`docker-entrypoint.sh` symlinks the db file into it on first boot — no
-  app code touched).
-- **Render's free tier doesn't support persistent disks.** Either delete
-  the `disk:` block in `render.yaml` (accept that saved session history
-  resets on every redeploy) or bump `plan:` to `starter` to keep it.
+- Builds from `Dockerfile`, plan `free`, health check at `/health`.
+- **No persistent disk** — Render's free tier doesn't support them. This is
+  fine: live timing is entirely in-memory (WebSocket feed → SSE broadcast),
+  it never touches the database. Only `/api/sessions` and past session
+  results/standings depend on `f1data.db`, and those just reset whenever
+  the free instance restarts.
+- If you later upgrade to a paid plan (or move to Railway/Fly.io) and want
+  that history to actually persist, add a disk/volume mounted at `/data` —
+  `docker-entrypoint.sh` already symlinks `f1data.db` into it automatically
+  when it detects one, no code changes needed.
 
-### Railway
+### Railway (alternative)
 
 New Project → Deploy from GitHub repo → it reads `railway.json` and builds
-from the Dockerfile automatically.
-
-- After the first deploy, add a volume in the Railway dashboard mounted at
-  `/data` (Railway doesn't support declaring volumes in `railway.json`) —
-  same persistence mechanism as Render.
-- Health check at `/health`.
+from the Dockerfile automatically. Same `/data` volume trick applies if you
+add one via the dashboard (Railway doesn't support declaring volumes in
+`railway.json`).
 
 ### Either way
 
-Once deployed, note the public URL (e.g. `https://sectorseven-api.up.railway.app`
-or `https://sectorseven-api.onrender.com`) — the frontend needs it.
+Once deployed, note the public URL (e.g. `https://sectorseven-api.onrender.com`)
+— the frontend needs it.
 
-## 2. Frontend — Cloudflare Pages
+## 2. Frontend — Vercel
 
-Dashboard → Workers & Pages → Create → Pages → connect this GitHub repo.
+Already connected via GitHub integration, live at `sectorseven.jadkashmar.dev`.
 
-| Setting | Value |
-|---|---|
-| Root directory | `frontend` |
-| Build command | `npm install && npm run build` |
-| Build output directory | `dist` (already declared in `frontend/wrangler.toml`) |
-| Environment variable | `VITE_API_URL` = the backend URL from step 1 |
-
-`frontend/public/_redirects` is already in place so client-side routes
-(`/races/:meetingKey`, etc.) don't 404 on a hard refresh.
+- Project root directory: `frontend`.
+- Environment variable: `VITE_API_URL` = the backend URL from step 1 (set
+  in Vercel → Project Settings → Environment Variables, then redeploy —
+  env var changes don't apply retroactively to the current deployment).
+- `frontend/vercel.json` adds the SPA rewrite so client-side routes
+  (`/races/:meetingKey`, etc.) don't 404 on a hard refresh.
 
 Push to `main` and both sides redeploy automatically on every commit.
 
 ## Verifying it worked
 
 - Backend: `curl https://<your-backend-url>/health` → `ok`
-- Frontend: open the Pages URL, check the Network tab for a pending
+- Frontend: open the site, check the Network tab for a pending
   `EventSource` request to `/api/live` on your backend's domain — if it's
   still pointing at `localhost:3000`, the `VITE_API_URL` env var didn't get
-  picked up (Pages env vars require a redeploy to take effect, not just a
+  picked up (needs an explicit redeploy after setting it, not just a
   dashboard save).
